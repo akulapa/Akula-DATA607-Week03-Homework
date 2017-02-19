@@ -1,0 +1,205 @@
+---
+title: "Akula-DATA607-Week03-Homework"
+author: "Pavan Akula"
+date: "February 18, 2017"
+output: html_document
+---
+
+This assignment is about Regular Expression. To solve the problems 3 and 4 from chapter 8 of *Automated Data Collection in R* following library is used.
+
+```{r , echo=TRUE}
+library(stringr)
+```
+
+**_Q: 1 (3.)_** Copy the introductory example. The vector name stores the extracted names.
+
+  R> name
+  [1] "Moe Szyslak" "Burns, C. Montgomery" "Rev. Timothy Lovejoy"
+  [4] "Ned Flanders" "Simpson, Homer" "Dr. Julius Hibbert"
+
+  (a) Use the tools of this chapter to rearrange the vector so that all elements conform to the standard first_name last_name.
+  (b) Construct a logical vector indicating whether a character has a title (i.e., Rev. and Dr.).
+  (c) Construct a logical vector indicating whether a character has a second name.
+
+```{r , echo=TRUE}
+# Actual data from the book Automated Data Collection in R, Chapter 8.
+raw.data <- "555-1239Moe Szyslak(636) 555-0113Burns, C. Montgomery555-6542Rev. Timothy Lovejoy555 8904Ned Flanders636-555-3226Simpson,Homer5553642Dr. Julius Hibbert"
+ 
+# names from raw data
+name <- unlist(str_extract_all(raw.data, "[[:alpha:]., ]{2,}"))
+
+name
+```
+
+
+**_A: (a)_**
+```{r,echo=TRUE}
+#Create data frame to store the names data
+
+names.data <- data.frame(name)
+names.data
+```
+```{r,echo=TRUE}
+#Format the data, in case of "Burns, C. Montgomery" remove middle " C. "
+
+names.data$formated_Data <- sub(" [A-z]{1}\\. "," ",names.data$name)
+names.data
+```
+```{r,echo=TRUE}
+#Format the data to [first name] [last name] format, in case of "Burns, Montgomery" and "Simpson,Homer" convert them to "Montgomery Burns" and "Homer Simpson" respectively.
+
+names.data$firstName_lastName <- sub("(\\w+),\\s(\\w+)","\\2 \\1",names.data$formated_Data)
+names.data$firstName_lastName <- sub("(\\w+),(\\w+)","\\2 \\1",names.data$firstName_lastName)
+names.data
+```
+**_(b)_**
+```{r , echo=TRUE}
+# Find out if character has a title (i.e., Rev. and Dr.).
+
+names.data$hasTitle <- str_detect(names.data$firstName_lastName,"(\\w+)\\.")
+names.data
+```
+
+**_(c)_**
+```{r , echo=TRUE}
+# Find out if character has a second name. Example "Burns, C. Montgomery"
+
+names.data$hasSecondName <- str_detect(names.data$name,"(, \\w+)\\.")
+names.data
+```
+
+
+**_Q: 2 (4.)_** Describe the types of strings that conform to the following regular expressions and construct an example that is matched by the regular expression.
+
+  (a) [0-9]+\\\\$
+
+  (b) \\\\b[a-z]{1,4}\\\\b
+
+  (c) .*?\\\\.txt$
+
+  (d) \\\\d{2}/\\\\d{2}/\\\\d{4}
+
+  (e) <(.+?)>.+?</\\\\1>
+
+**_A: (a)_**
+```{r , echo=TRUE}
+# Pattern is used to identify numerics followed by $ sign. All digits starting from 0 to 9.
+
+pattern <- "[0-9]+\\$"
+num.data <- (c("1357.75$", "ACEG$", "$1234", "3421$", "2590$", "9867.35$", "1$", "123456$"))
+str_match(num.data,pattern = pattern)
+
+#[1,] "75$" -- Value is selected because last 3 characters match the pattern. Data before decimal does not fit the pattern.  
+#[2,] NA   -- Even though string ends with $ sign, it does not fit the numeric pattern.  
+#[3,] NA     -- Dollar sign exists at the begin of the string.
+#[4,] "3421$" -- Fits the pattern exactly
+#[5,] "2590$" -- Fits the pattern exactly
+#[6,] "35$"  -- Value is selected because last 3 characters match the pattern. Data before decimal does not fit the pattern.
+#[7,] "1$" -- Fits the pattern exactly
+#[8,] "123456$" -- Fits the pattern exactly
+
+```
+
+**_(b)_**
+```{r , echo=TRUE}
+# Pattern is used to identify all the words starting with lowercase letters [a-z]. Basically any word of length upto 4 characters but not more than 4 characters matches the pattern. "\\b" marks begining and ending of the word.
+
+pattern <- "\\b[a-z]{1,4}\\b"
+string.data <- (c("bats", "Bats", "BATS", "bambi", "boys", "dogs", "cats", "news", "Note books", "bye", "by2020"))
+str_match(string.data,pattern = pattern)
+
+#[1,] "bats" -- Matches exact pattern 4 letter word.
+#[2,] NA    -- Even though it is a 4 letter word, it starts with uppercase letter
+#[3,] NA    -- Even though it is a 4 letter word, it starts with uppercase letter
+#[4,] NA    -- This is 5 letter word, does not match the pattern.
+#[5,] "boys" -- Matches exact pattern 4 letter word.
+#[6,] "dogs" -- Matches exact pattern 4 letter word.
+#[7,] "cats" -- Matches exact pattern 4 letter word.
+#[8,] "news" -- Matches exact pattern 4 letter word.
+#[9,] NA    -- Does not match the pattern. Case has 2 words
+#[10,] "bye" -- Matches exact pattern 3 letter word.
+#[11,] NA    -- Has numerics in the word.
+
+```
+
+**_(c)_**
+```{r , echo=TRUE}
+# Pattern is used to identify files names. Starting of the file name can be any character ".*?" and should be ending with ".txt". "$" marks ending of the word.
+
+pattern <- ".*?\\.txt$"
+filenames.data <- (c("one.txt", "2Notepad.txt", "3-4/56.txt", "A B^NewFile.txt", "JustSaved.txtdoc", "oldfile.txt$", "Very Old.xls", "Sample.txt"))
+str_match(filenames.data,pattern = pattern)
+
+#[1,] "one.txt"       -- Matches exact pattern has data before .txt and file name ends with txt.
+#[2,] "2Notepad.txt"  --  Matches exact pattern has data before .txt and file name  ends with txt.
+#[3,] "3-4/56.txt"    -- Matches exact pattern has data before .txt and file name ends with txt. 
+#[4,] "A B^NewFile.txt"  -- Matches exact pattern has data before .txt and file name ends with txt. 
+#[5,] NA                 -- Even though .txt exists in the file name, file name does not end with .txt, hence no match. 
+#[6,] NA                 -- Even though .txt exists in the file name, file name does not end with .txt, hence no match.
+#[7,] NA                 -- File name does not end with .txt, hence no match.
+#[8,] "Sample.txt"       -- Matches exact pattern has data before .txt and file name ends with txt.
+```
+
+**_(d)_**
+```{r , echo=TRUE}
+# Pattern is used to identify dates. Format of the string should be 2 digits followed by "/" again 2 digits followed by "/" and then 4 digits. Digits can be [0-9], even if it is not valid date.
+
+pattern <- "\\d{2}/\\d{2}/\\d{4}"
+date.data <- (c("01/01/2017", "01.01.2016", "21/21/2017", "Jan 01, 2017", "1/01/2017", "01/1/2017", "01/01/17", "00/00/0000", "2017/01/23"))
+str_match(date.data,pattern = pattern)
+
+#[1,] "01/01/2017" -- Matches exact pattern 2 digit number followed "/" 2 digits "/" and 4 digits.
+#[2,] NA           -- Does not match the pattern.
+#[3,] "21/21/2017" -- Matches the pattern, even though it is not valid date.
+#[4,] NA           -- Does not match the pattern
+#[5,] NA           -- Does not match the pattern
+#[6,] NA           -- Does not match the pattern, even though it is valid date.
+#[7,] NA           -- Does not match the pattern, even though it is valid date.
+#[8,] "00/00/0000" -- Matches the pattern, even though it is not valid date.
+#[9,] NA           -- Does not match the pattern.
+
+```
+
+**_(e)_**
+```{r , echo=TRUE}
+# Pattern is used to extract html data. Format should start with "<" and collect all the info before first ">", then collect all the info before "</". All the data collected is valid if the last letter or word is same as data collected first time. Pattern will extract data if "<(.+?)>" and "</\\1>" matches. "\\1" should be same as "(.+?)".
+
+pattern <- "<(.+?)>.+?</\\1>"
+htmltag.data <- (c("<tr><td>Info</td></tr>", "<b><i>Info</i></bad>", "<c><i>Info</c></i>", "</b>"))
+str_match(htmltag.data,pattern = pattern)
+
+#     [,1]                     [,2]
+#[1,] "<tr><td>Info</td></tr>" "tr" -- Matches the pattern exactly. First info collected is from <tr>.
+#[2,] "<i>Info</i>"            "i"  -- Matches partially, <b> and </bad> tags are eliminated. and tag <i> is used.
+#[3,] "<c><i>Info</c>"         "c"  -- Matches partially, <c> is mapped to </c> and last tag </i> is eliminated. As first info collected is from <c>.
+#[4,] NA                       NA  -- Does not match the pattern.
+
+```
+ 
+**_Q 3 (9.)_** The following code hides a secret message. Crack it with R and regular expressions. Hint: Some of the characters are more revealing than others! The code snippet is also available in the materials at www.r-datacollection.com.
+
+```{r , echo=TRUE}
+secret.msg <- "clcopCow1zmstc0d87wnkig7OvdicpNuggvhryn92Gjuwczi8hqrfpRxs5Aj5dwpn0TanwoUwisdij7Lj8kpf03AT5Idr3coc0bt7yczjatOaootj55t3Nj3ne6c4Sfek.r1w1YwwojigOd6vrfUrbz2.2bkAnbhzgv4R9i05zEcrop.wAgnb.SqoU65fPa1otfb7wEm24k6t3sR9zqe5fy89n6Nd5t9kc4fE905gmc4Rgxo5nhDk!gr"
+
+secret.msg
+```
+```{r , echo=TRUE}
+#Extract all lower case letters
+pattern <- "[a-z].*?"
+str_extract_all(secret.msg, pattern)
+```
+```{r , echo=TRUE}
+#Extract all upper case letters
+pattern <- "[A-Z].*?"
+str_extract_all(secret.msg, pattern)
+
+#Message: CONGRATULATIONS YOU ARE A SUPERNERD
+```
+
+
+
+
+
+
+References:
+http://www.stackoverflow.com/questions/33826650/last-name-first-name-to-first-name-last-name
